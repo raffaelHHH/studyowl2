@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { Play, Trophy, BookOpen, Calculator, Star } from "lucide-react";
+import { Play, Trophy, BookOpen, Calculator, Star, Camera, Ruler } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const Index = () => {
         </div>
 
         {/* Main Menu Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {/* Start Game */}
           <GameCard variant="primary" className="text-center hover:scale-105 transition-transform">
             <Play className="w-16 h-16 text-primary mx-auto mb-6" />
@@ -58,6 +58,24 @@ const Index = () => {
             >
               <Trophy className="w-5 h-5" />
               View Rankings
+            </Button>
+          </GameCard>
+
+          {/* AR Measurement Game */}
+          <GameCard variant="purple" className="text-center hover:scale-105 transition-transform">
+            <Camera className="w-16 h-16 text-purple mx-auto mb-6" />
+            <h2 className="text-3xl font-bold text-purple mb-4">AR MEASURE</h2>
+            <p className="text-muted-foreground mb-6">
+              Use your camera to measure real objects and solve geometry puzzles!
+            </p>
+            <Button 
+              onClick={() => navigate('/measurement-game')}
+              size="lg"
+              variant="purple"
+              className="w-full gap-2"
+            >
+              <Ruler className="w-5 h-5" />
+              Start Measuring
             </Button>
           </GameCard>
 

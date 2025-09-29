@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Game from "./pages/Game";
 import Leaderboard from "./pages/Leaderboard";
 import Rules from "./pages/Rules";
+import MeasurementGame from "./pages/MeasurementGame";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/game" element={<Game />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rules" element={<Rules />} />
+          <Route path="/measurement-game" element={<MeasurementGame />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
