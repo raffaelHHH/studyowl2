@@ -50,28 +50,62 @@ const MeasurementGame = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }
-      });
+      // Request camera permissions with specific constraints
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setCameraActive(true);
-        
-        // Start QR code scanning
-        if (codeReader.current) {
-          codeReader.current.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
-            if (result) {
-              handleQRCodeDetected(result.getText());
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play();
+            setCameraActive(true);
+            
+            // Set up canvas to match video dimensions
+            const canvas = canvasRef.current;
+            if (canvas && videoRef.current) {
+              canvas.width = videoRef.current.videoWidth;
+              canvas.height = videoRef.current.videoHeight;
             }
-          });
-        }
+            
+            // Start QR code scanning with error handling
+            if (codeReader.current && videoRef.current) {
+              try {
+                codeReader.current.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
+                  if (result && !qrCodeDetected) {
+                    handleQRCodeDetected(result.getText());
+                  }
+                  // Ignore scanning errors - they're normal when no QR code is visible
+                });
+              } catch (scanError) {
+                console.log('QR scanning started successfully');
+              }
+            }
+          }
+        };
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing camera:', err);
+      let errorMessage = "Unable to access camera.";
+      
+      if (err.name === 'NotAllowedError') {
+        errorMessage = "Camera permission denied. Please allow camera access and try again.";
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = "No camera found on this device.";
+      } else if (err.name === 'NotSupportedError') {
+        errorMessage = "Camera not supported on this browser.";
+      }
+      
       toast({
         title: "Camera Error",
-        description: "Unable to access camera. Please allow camera permissions.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -92,20 +126,27 @@ const MeasurementGame = () => {
     if (measurementMode !== "measuring" && measurementMode !== "calibrating") return;
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
     
     if (!startPoint) {
       setStartPoint({ x, y });
+      drawPoint(x, y, 'start');
       toast({
-        title: "First point set",
+        title: "First point set ✓",
         description: "Tap the second point to complete measurement",
       });
     } else {
       setEndPoint({ x, y });
+      drawPoint(x, y, 'end');
+      drawLine(startPoint, { x, y });
       calculateMeasurement({ x, y });
     }
   };
@@ -116,7 +157,7 @@ const MeasurementGame = () => {
     if (question.type === "length") {
       const distance = Math.sqrt(Math.pow(end.x - startPoint.x, 2) + Math.pow(end.y - startPoint.y, 2));
       const measurementInCm = distance / calibrationFactor;
-      setUserMeasurement(Math.round(measurementInCm));
+      setUserMeasurement(Math.round(measurementInCm * 10) / 10); // Round to 1 decimal
     } else if (question.type === "angle") {
       const angle = Math.atan2(end.y - startPoint.y, end.x - startPoint.x) * (180 / Math.PI);
       const positiveAngle = angle < 0 ? angle + 360 : angle;
@@ -124,6 +165,52 @@ const MeasurementGame = () => {
     }
     
     setMeasurementMode("waiting");
+  };
+
+  const drawPoint = (x: number, y: number, type: 'start' | 'end') => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.fillStyle = type === 'start' ? '#ff0000' : '#00ff00';
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Add text label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px Arial';
+    ctx.fillText(type === 'start' ? 'START' : 'END', x + 12, y + 5);
+  };
+
+  const drawLine = (start: {x: number, y: number}, end: {x: number, y: number}) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+    
+    // Draw measurement text
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+    const measurement = Math.round((distance / calibrationFactor) * 10) / 10;
+    
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(midX - 30, midY - 15, 60, 20);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${measurement}cm`, midX, midY);
   };
 
   const submitMeasurement = () => {
@@ -161,22 +248,43 @@ const MeasurementGame = () => {
     setStartPoint(null);
     setEndPoint(null);
     setUserMeasurement(null);
-    setMeasurementMode("measuring");
+    setMeasurementMode(qrCodeDetected ? "measuring" : "calibrating");
+    
+    // Clear canvas overlay
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
   };
 
   const calibrateWithQR = () => {
-    // Assuming QR code is 2cm x 2cm for calibration
+    // Standard QR code is typically 2.1cm x 2.1cm
     if (startPoint && endPoint) {
       const qrSizeInPixels = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
-      setCalibrationFactor(qrSizeInPixels / 2); // 2cm QR code
+      setCalibrationFactor(qrSizeInPixels / 2.1); // 2.1cm standard QR code
       setMeasurementMode("measuring");
+      setQrCodeDetected(true);
       resetMeasurement();
       
       toast({
         title: "Calibration complete! ✅",
-        description: "Now you can accurately measure objects",
+        description: "Camera is now calibrated for accurate measurements",
       });
     }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setCameraActive(false);
+    setQrCodeDetected(false);
+    setMeasurementMode("waiting");
+    resetMeasurement();
   };
 
   return (
@@ -241,61 +349,75 @@ const MeasurementGame = () => {
                 </p>
               </div>
 
-              <div className="relative">
+              <div className="relative bg-black rounded-lg overflow-hidden">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  className="w-full h-64 bg-black rounded-lg"
+                  muted
+                  className="w-full h-80 object-cover"
                 />
                 <canvas
                   ref={canvasRef}
                   onClick={handleCanvasClick}
-                  className="absolute top-0 left-0 w-full h-64 cursor-crosshair"
-                  width={400}
-                  height={256}
+                  className="absolute top-0 left-0 w-full h-80 cursor-crosshair"
+                  style={{ pointerEvents: measurementMode === "waiting" ? "none" : "auto" }}
                 />
                 
-                {/* Measurement overlay */}
-                {startPoint && (
-                  <div 
-                    className="absolute w-2 h-2 bg-red-500 rounded-full"
-                    style={{ 
-                      left: `${(startPoint.x / 400) * 100}%`, 
-                      top: `${(startPoint.y / 256) * 100}%` 
-                    }}
-                  />
-                )}
-                {endPoint && (
-                  <div 
-                    className="absolute w-2 h-2 bg-red-500 rounded-full"
-                    style={{ 
-                      left: `${(endPoint.x / 400) * 100}%`, 
-                      top: `${(endPoint.y / 256) * 100}%` 
-                    }}
-                  />
-                )}
-              </div>
-
-              <div className="flex gap-2 flex-wrap">
+                {/* Instruction overlay */}
                 {!qrCodeDetected && (
-                  <div className="flex items-center gap-2 text-warning">
-                    <QrCode className="w-5 h-5" />
-                    <span>Scan a QR code to calibrate</span>
+                  <div className="absolute top-4 left-4 right-4 bg-black/70 text-white p-3 rounded-lg">
+                    <p className="text-sm">📱 First: Scan a QR code or manually calibrate by measuring a known object</p>
                   </div>
                 )}
                 
-                {measurementMode === "calibrating" && (
+                {qrCodeDetected && measurementMode === "measuring" && (
+                  <div className="absolute top-4 left-4 right-4 bg-green-600/80 text-white p-3 rounded-lg">
+                    <p className="text-sm">📏 Tap two points to measure distance or angle</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 flex-wrap justify-center">
+                {measurementMode === "calibrating" && startPoint && endPoint && (
                   <Button onClick={calibrateWithQR} variant="secondary" size="sm">
                     <Target className="w-4 h-4 mr-2" />
-                    Calibrate with QR
+                    Set as 2.1cm (QR Code)
                   </Button>
                 )}
                 
                 <Button onClick={resetMeasurement} variant="outline" size="sm">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset
+                  Reset Points
                 </Button>
+                
+                <Button onClick={stopCamera} variant="destructive" size="sm">
+                  Stop Camera
+                </Button>
+                
+                {!qrCodeDetected && (
+                  <div className="w-full text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Manual calibration: Measure a known object (like a credit card = 8.5cm)
+                    </p>
+                    {startPoint && endPoint && (
+                      <Button 
+                        onClick={() => {
+                          const qrSizeInPixels = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
+                          setCalibrationFactor(qrSizeInPixels / 8.5); // Credit card width
+                          setQrCodeDetected(true);
+                          setMeasurementMode("measuring");
+                          resetMeasurement();
+                          toast({ title: "Manual calibration complete! ✅", description: "Using credit card size (8.5cm)" });
+                        }}
+                        variant="secondary" 
+                        size="sm"
+                      >
+                        Set as 8.5cm (Credit Card)
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {userMeasurement !== null && (
