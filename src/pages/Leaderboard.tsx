@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { ArrowLeft, Trophy, Medal, Award, Star } from "lucide-react";
+import { ArrowLeft, Trophy, Medal, Award, Star, Home, Gift } from "lucide-react";
+import owlMascot from "@/assets/owl-mascot.png";
 
 interface Score {
   score: number;
@@ -53,22 +54,34 @@ const Leaderboard = () => {
       <div className="container mx-auto max-w-4xl py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <Home className="w-4 h-4" />
+            </Button>
+            <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+          </div>
           
-          <Button
-            variant="default"
-            onClick={() => navigate('/game')}
-            className="gap-2"
-          >
-            Play Again
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/rewards')}
+              className="gap-2"
+            >
+              <Gift className="w-4 h-4" />
+              Rewards
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => navigate('/game')}
+              className="gap-2"
+            >
+              Play Again
+            </Button>
+          </div>
         </div>
 
         {/* Title */}
@@ -77,7 +90,7 @@ const Leaderboard = () => {
             🏆 Leaderboard
           </h1>
           <p className="text-xl text-muted-foreground">
-            Top Math Champions
+            StudyOwl Champions
           </p>
         </div>
 

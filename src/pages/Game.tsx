@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import GameCard from "@/components/GameCard";
 import LetterCollector from "@/components/LetterCollector";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trophy, Star } from "lucide-react";
+import { ArrowLeft, Trophy, Star, Home } from "lucide-react";
+import owlMascot from "@/assets/owl-mascot.png";
 
 interface Question {
   id: number;
@@ -30,6 +32,9 @@ const Game = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [collectedLetters, setCollectedLetters] = useState<string[]>([]);
   const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [earnedLetter, setEarnedLetter] = useState("");
   const targetWord = "LENGTH";
 
   const question = mathQuestions[currentQuestion];
@@ -40,50 +45,45 @@ const Game = () => {
     
     if (answer === question.answer) {
       // Correct answer
+      setIsCorrect(true);
+      setEarnedLetter(question.letter);
+      setShowFeedback(true);
       setCollectedLetters([...collectedLetters, question.letter]);
       setScore(score + 10);
-      
-      toast({
-        title: "Correct! 🎉",
-        description: `You earned the letter "${question.letter}"!`,
-        variant: "default",
-      });
+    } else {
+      // Wrong answer
+      setIsCorrect(false);
+      setShowFeedback(true);
+    }
+  };
 
-      // Move to next question
+  const handleFeedbackContinue = () => {
+    setShowFeedback(false);
+    
+    if (isCorrect) {
+      // Move to next question or complete game
       if (currentQuestion < mathQuestions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setUserAnswer("");
       } else {
-        // Game completed
-        toast({
-          title: "Congratulations! 🏆",
-          description: `You spelled "${targetWord}" and earned ${score + 10} points!`,
-          variant: "default",
-        });
-        
-        // Save score to localStorage
+        // Game completed - save score and navigate
         const existingScores = JSON.parse(localStorage.getItem('mathGameScores') || '[]');
         const newScore = {
-          score: score + 10,
+          score: score,
           word: targetWord,
           date: new Date().toISOString(),
-          playerName: "Player" // Could be extended to allow custom names
+          playerName: "Player"
         };
         existingScores.push(newScore);
         localStorage.setItem('mathGameScores', JSON.stringify(existingScores));
         
-        // Navigate to leaderboard after 2 seconds
         setTimeout(() => {
           navigate('/leaderboard');
-        }, 2000);
+        }, 500);
       }
     } else {
-      // Wrong answer
-      toast({
-        title: "Not quite right! 🤔",
-        description: "Try again!",
-        variant: "destructive",
-      });
+      // Reset answer field for retry
+      setUserAnswer("");
     }
   };
 
@@ -94,20 +94,20 @@ const Game = () => {
       <div className="container mx-auto max-w-4xl py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </Button>
-          
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg">
-              <Star className="w-5 h-5 text-accent" />
-              <span className="font-bold text-lg">{score} pts</span>
-            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <Home className="w-4 h-4" />
+            </Button>
+            <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+          </div>
+          
+          <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg">
+            <Star className="w-5 h-5 text-accent" />
+            <span className="font-bold text-lg">{score} pts</span>
           </div>
         </div>
 
@@ -193,6 +193,14 @@ const Game = () => {
             </div>
           </GameCard>
         )}
+
+        {/* Feedback Modal */}
+        <FeedbackModal 
+          isOpen={showFeedback}
+          isCorrect={isCorrect}
+          letter={isCorrect ? earnedLetter : undefined}
+          onContinue={handleFeedbackContinue}
+        />
       </div>
     </div>
   );

@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, QrCode, Ruler, RotateCcw, Target } from "lucide-react";
+import { ArrowLeft, Camera, QrCode, Ruler, RotateCcw, Target, Home } from "lucide-react";
 import { BrowserQRCodeReader } from "@zxing/browser";
+import owlMascot from "@/assets/owl-mascot.png";
 
 interface MeasurementQuestion {
   id: number;
@@ -292,20 +293,20 @@ const MeasurementGame = () => {
       <div className="container mx-auto max-w-4xl py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </Button>
-          
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg">
-              <Ruler className="w-5 h-5 text-accent" />
-              <span className="font-bold text-lg">{score} pts</span>
-            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <Home className="w-4 h-4" />
+            </Button>
+            <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+          </div>
+          
+          <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg">
+            <Ruler className="w-5 h-5 text-accent" />
+            <span className="font-bold text-lg">{score} pts</span>
           </div>
         </div>
 

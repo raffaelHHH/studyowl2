@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { ArrowLeft, Play, Target, Trophy, Star, Calculator, BookOpen } from "lucide-react";
+import { ArrowLeft, Play, Target, Trophy, Star, Calculator, BookOpen, Home } from "lucide-react";
+import owlMascot from "@/assets/owl-mascot.png";
 
 const Rules = () => {
   const navigate = useNavigate();
@@ -11,14 +12,16 @@ const Rules = () => {
       <div className="container mx-auto max-w-4xl py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <Home className="w-4 h-4" />
+            </Button>
+            <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+          </div>
           
           <Button
             variant="default"
@@ -37,7 +40,7 @@ const Rules = () => {
             Game Rules
           </h1>
           <p className="text-xl text-muted-foreground">
-            Learn how to become a Math Adventure champion!
+            Learn how to become a StudyOwl champion!
           </p>
         </div>
 
