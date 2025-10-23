@@ -2,11 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import GameCard from "@/components/GameCard";
 import LetterCollector from "@/components/LetterCollector";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trophy, Star, Home } from "lucide-react";
+import { ArrowLeft, Trophy, Star, Home, Info } from "lucide-react";
 import owlMascot from "@/assets/owl-mascot.png";
 
 interface Question {
@@ -35,12 +46,23 @@ const Game = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [earnedLetter, setEarnedLetter] = useState("");
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const targetWord = "LENGTH";
 
   const question = mathQuestions[currentQuestion];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!userAnswer.trim()) {
+      toast({
+        title: "Please enter an answer",
+        description: "Type your answer before submitting!",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const answer = parseInt(userAnswer);
     
     if (answer === question.answer) {
@@ -90,32 +112,32 @@ const Game = () => {
   const isGameComplete = collectedLetters.length === targetWord.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/20 p-4">
-      <div className="container mx-auto max-w-4xl py-8">
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => navigate('/')}
+              onClick={() => setShowExitDialog(true)}
             >
-              <Home className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
             </Button>
             <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
           </div>
           
-          <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg">
+          <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-2xl shadow-lg border-2 border-accent/30">
             <Star className="w-5 h-5 text-accent" />
-            <span className="font-bold text-lg">{score} pts</span>
+            <span className="font-bold text-lg text-accent">{score} pts</span>
           </div>
         </div>
 
         {/* Progress */}
         <div className="mb-8">
           <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold text-foreground">
-              Collect letters to spell: <span className="text-primary">{targetWord}</span>
+            <h2 className="text-xl md:text-2xl font-bold text-accent">
+              Collect letters to spell: <span className="text-accent">{targetWord}</span>
             </h2>
           </div>
           <LetterCollector 
@@ -123,26 +145,26 @@ const Game = () => {
             targetWord={targetWord}
             className="mb-6" 
           />
-          <div className="w-full bg-muted rounded-full h-3">
+          <div className="w-full bg-muted rounded-full h-3 mb-2">
             <div 
-              className="bg-gradient-to-r from-primary to-accent h-3 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-accent via-accent to-primary h-3 rounded-full transition-all duration-500"
               style={{ width: `${(collectedLetters.length / targetWord.length) * 100}%` }}
             />
           </div>
-          <p className="text-center mt-2 text-muted-foreground">
+          <p className="text-center text-muted-foreground">
             Question {currentQuestion + 1} of {mathQuestions.length}
           </p>
         </div>
 
         {!isGameComplete ? (
           /* Question Card */
-          <GameCard className="text-center max-w-2xl mx-auto">
+          <GameCard className="text-center max-w-2xl mx-auto border-2 border-accent/20">
             <div className="mb-8">
-              <h1 className="text-6xl font-bold text-primary mb-4">
+              <h1 className="text-5xl md:text-6xl font-bold text-accent mb-4">
                 {question.question}
               </h1>
-              <p className="text-xl text-muted-foreground">
-                Answer to earn the letter "{question.letter}"
+              <p className="text-lg md:text-xl text-muted-foreground">
+                Answer to earn the letter "<span className="text-accent font-bold">{question.letter}</span>"
               </p>
             </div>
 
@@ -152,16 +174,15 @@ const Game = () => {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Your answer"
-                className="text-3xl text-center h-16 text-primary font-bold rounded-2xl border-2 border-primary/30 focus:border-primary"
+                className="text-2xl md:text-3xl text-center h-16 text-accent font-bold rounded-2xl border-2 border-accent/30 focus:border-accent bg-background"
                 autoFocus
               />
               
               <Button 
                 type="submit" 
-                size="mega"
-                variant="default"
+                size="lg"
+                className="w-full h-16 text-xl"
                 disabled={!userAnswer}
-                className="w-full"
               >
                 Submit Answer
               </Button>
@@ -169,23 +190,22 @@ const Game = () => {
           </GameCard>
         ) : (
           /* Game Complete */
-          <GameCard variant="success" className="text-center max-w-2xl mx-auto">
+          <GameCard variant="success" className="text-center max-w-2xl mx-auto border-2 border-success/30">
             <div className="space-y-6">
-              <Trophy className="w-24 h-24 text-success mx-auto" />
-              <h1 className="text-4xl font-bold text-success">
+              <Trophy className="w-24 h-24 text-accent mx-auto" />
+              <h1 className="text-4xl font-bold text-accent">
                 Congratulations!
               </h1>
-              <p className="text-xl">
-                You successfully spelled <span className="font-bold text-success">{targetWord}</span>!
+              <p className="text-xl text-foreground">
+                You successfully spelled <span className="font-bold text-accent">{targetWord}</span>!
               </p>
               <p className="text-lg text-muted-foreground">
-                Final Score: <span className="font-bold text-success">{score} points</span>
+                Final Score: <span className="font-bold text-accent">{score} points</span>
               </p>
               <Button 
                 onClick={() => navigate('/leaderboard')}
                 size="lg"
-                variant="default"
-                className="gap-2 bg-success hover:bg-success/90 text-success-foreground"
+                className="gap-2 w-full"
               >
                 <Trophy className="w-5 h-5" />
                 View Leaderboard
@@ -201,6 +221,53 @@ const Game = () => {
           letter={isCorrect ? earnedLetter : undefined}
           onContinue={handleFeedbackContinue}
         />
+
+        {/* Exit Confirmation Dialog */}
+        <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+          <AlertDialogContent className="bg-card border-2 border-accent/20">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-accent">Exit Game?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to exit? Your progress will be lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Stay</AlertDialogCancel>
+              <AlertDialogAction onClick={() => navigate('/')}>
+                Exit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex items-center justify-around py-4 px-8 max-w-2xl mx-auto">
+          <button
+            onClick={() => setShowExitDialog(true)}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Home className="w-6 h-6" />
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/rules')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Info className="w-6 h-6" />
+            <span className="text-xs font-medium">Instructions</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Trophy className="w-6 h-6" />
+            <span className="text-xs font-medium">Leaderboard</span>
+          </button>
+        </div>
       </div>
     </div>
   );

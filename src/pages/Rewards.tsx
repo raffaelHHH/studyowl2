@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { ArrowLeft, Gift, Coffee, Ticket, Star } from "lucide-react";
+import { ArrowLeft, Gift, Coffee, Ticket, Star, Home, Trophy, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import owlMascot from "@/assets/owl-mascot.png";
 
 interface Reward {
   id: string;
@@ -45,27 +46,30 @@ const Rewards = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-purple/10 to-accent/20 p-4">
-      <div className="container mx-auto max-w-4xl py-8">
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+          </div>
         </div>
 
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple to-accent bg-clip-text text-transparent mb-4">
+          <Gift className="w-20 h-20 text-accent mx-auto mb-4" />
+          <h1 className="text-4xl md:text-5xl font-bold text-accent mb-4">
             Rewards Store
           </h1>
-          <div className="flex items-center justify-center gap-2 bg-card px-6 py-3 rounded-3xl shadow-xl inline-flex">
+          <div className="flex items-center justify-center gap-2 bg-card border-2 border-accent/30 px-6 py-3 rounded-3xl shadow-xl inline-flex">
             <Star className="w-6 h-6 text-accent" />
-            <span className="text-2xl font-bold text-primary">{userPoints} points</span>
+            <span className="text-2xl font-bold text-accent">{userPoints} points</span>
           </div>
         </div>
 
@@ -78,15 +82,14 @@ const Rewards = () => {
             return (
               <GameCard 
                 key={reward.id} 
-                variant={canAfford ? "primary" : "secondary"}
-                className="text-center"
+                className={`text-center border-2 ${canAfford ? 'border-accent/50' : 'border-accent/20'}`}
               >
-                <Icon className={`w-16 h-16 mx-auto mb-4 ${canAfford ? 'text-primary' : 'text-muted-foreground'}`} />
-                <h3 className="text-xl font-bold mb-2">{reward.name}</h3>
+                <Icon className={`w-16 h-16 mx-auto mb-4 ${canAfford ? 'text-accent' : 'text-muted-foreground'}`} />
+                <h3 className="text-xl font-bold text-foreground mb-2">{reward.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{reward.description}</p>
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-accent" />
-                  <span className="font-bold text-lg">{reward.cost} points</span>
+                  <span className="font-bold text-lg text-accent">{reward.cost} points</span>
                 </div>
                 <Button
                   onClick={() => handleRedeem(reward)}
@@ -101,11 +104,47 @@ const Rewards = () => {
           })}
         </div>
 
-        <GameCard className="text-center">
+        <GameCard className="text-center border-2 border-accent/20">
           <p className="text-muted-foreground">
             🎯 Keep playing to earn more points and unlock amazing rewards!
           </p>
+          <Button
+            onClick={() => navigate('/game')}
+            size="lg"
+            className="mt-4 gap-2"
+          >
+            Play Now
+          </Button>
         </GameCard>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex items-center justify-around py-4 px-8 max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Home className="w-6 h-6" />
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/rules')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Info className="w-6 h-6" />
+            <span className="text-xs font-medium">Instructions</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Trophy className="w-6 h-6" />
+            <span className="text-xs font-medium">Leaderboard</span>
+          </button>
+        </div>
       </div>
     </div>
   );

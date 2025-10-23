@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { ArrowLeft, Trophy, Medal, Award, Star, Home, Gift } from "lucide-react";
+import { ArrowLeft, Trophy, Medal, Award, Star, Home, Gift, Info } from "lucide-react";
 import owlMascot from "@/assets/owl-mascot.png";
 
 interface Score {
@@ -50,8 +50,8 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-purple/10 to-secondary/20 p-4">
-      <div className="container mx-auto max-w-4xl py-8">
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -60,37 +60,31 @@ const Leaderboard = () => {
               size="icon"
               onClick={() => navigate('/')}
             >
-              <Home className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
             </Button>
             <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
           </div>
           
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={() => navigate('/rewards')}
               className="gap-2"
             >
               <Gift className="w-4 h-4" />
               Rewards
             </Button>
-            <Button
-              variant="default"
-              onClick={() => navigate('/game')}
-              className="gap-2"
-            >
-              Play Again
-            </Button>
           </div>
         </div>
 
         {/* Title */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-purple bg-clip-text text-transparent mb-4">
-            🏆 Leaderboard
+          <Trophy className="w-20 h-20 text-accent mx-auto mb-4" />
+          <h1 className="text-4xl md:text-5xl font-bold text-accent mb-4">
+            Leaderboard
           </h1>
-          <p className="text-xl text-muted-foreground">
-            StudyOwl Champions
+          <p className="text-lg md:text-xl text-muted-foreground">
+            Top Math Champions
           </p>
         </div>
 
@@ -100,15 +94,15 @@ const Leaderboard = () => {
             {scores.slice(0, 10).map((score, index) => (
               <GameCard
                 key={index}
-                className={`transition-all duration-200 hover:scale-102 ${
-                  index < 3 ? 'border-2 border-primary/30' : ''
+                className={`transition-all duration-200 hover:scale-102 border-2 ${
+                  index === 0 ? 'border-accent/50' : 'border-accent/20'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`
                       w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl
-                      ${getRankColor(index)}
+                      ${index === 0 ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}
                     `}>
                       {index < 3 ? (
                         getRankIcon(index)
@@ -118,23 +112,23 @@ const Leaderboard = () => {
                     </div>
                     
                     <div>
-                      <h3 className="text-xl font-bold text-foreground">
+                      <h3 className="text-lg md:text-xl font-bold text-foreground">
                         {score.playerName}
                       </h3>
-                      <p className="text-muted-foreground">
-                        Spelled: <span className="font-semibold text-primary">{score.word}</span>
-                      </p>
                       <p className="text-sm text-muted-foreground">
+                        Spelled: <span className="font-semibold text-accent">{score.word}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
                         {new Date(score.date).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-primary">
+                    <div className="text-2xl md:text-3xl font-bold text-accent">
                       {score.score}
                     </div>
-                    <p className="text-sm text-muted-foreground">points</p>
+                    <p className="text-xs text-muted-foreground">points</p>
                   </div>
                 </div>
               </GameCard>
@@ -142,9 +136,9 @@ const Leaderboard = () => {
           </div>
         ) : (
           /* Empty State */
-          <GameCard className="text-center py-12">
+          <GameCard className="text-center py-12 border-2 border-accent/20">
             <Trophy className="w-24 h-24 text-muted-foreground/50 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-muted-foreground mb-4">
+            <h2 className="text-2xl font-bold text-foreground mb-4">
               No scores yet!
             </h2>
             <p className="text-muted-foreground mb-8">
@@ -153,7 +147,6 @@ const Leaderboard = () => {
             <Button
               onClick={() => navigate('/game')}
               size="lg"
-              variant="default"
               className="gap-2"
             >
               <Star className="w-5 h-5" />
@@ -165,16 +158,54 @@ const Leaderboard = () => {
         {/* Action Buttons */}
         <div className="flex justify-center gap-4 mt-12">
           <Button
-            variant="secondary"
+            variant="outline"
             size="lg"
             onClick={() => {
-              localStorage.removeItem('mathGameScores');
-              setScores([]);
+              if (confirm('Are you sure you want to clear all scores?')) {
+                localStorage.removeItem('mathGameScores');
+                setScores([]);
+              }
             }}
-            className="gap-2"
           >
             Clear Scores
           </Button>
+          
+          <Button
+            size="lg"
+            onClick={() => navigate('/game')}
+            className="gap-2"
+          >
+            Play Again
+          </Button>
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex items-center justify-around py-4 px-8 max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Home className="w-6 h-6" />
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/rules')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Info className="w-6 h-6" />
+            <span className="text-xs font-medium">Instructions</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="flex flex-col items-center gap-1 text-accent"
+          >
+            <Trophy className="w-6 h-6" />
+            <span className="text-xs font-medium">Leaderboard</span>
+          </button>
         </div>
       </div>
     </div>
