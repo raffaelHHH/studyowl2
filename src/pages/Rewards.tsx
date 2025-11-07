@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameCard from "@/components/GameCard";
-import { ArrowLeft, Gift, Coffee, Ticket, Star, Home, Trophy, Info } from "lucide-react";
+import { ArrowLeft, Gift, Coffee, Ticket, Star, Home, Trophy, Info, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import owlMascot from "@/assets/owl-mascot.png";
+import { useAuth } from "@/hooks/useAuth";
+import { FingerprintModal } from "@/components/FingerprintModal";
 
 interface Reward {
   id: string;
@@ -23,25 +25,53 @@ const rewards: Reward[] = [
 const Rewards = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, profile, loading, signOut } = useAuth();
   const [userPoints, setUserPoints] = useState(() => {
     const scores = JSON.parse(localStorage.getItem('mathGameScores') || '[]');
     return scores.reduce((total: number, score: any) => total + score.score, 0);
   });
+  const [showFingerprintModal, setShowFingerprintModal] = useState(false);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
 
-  const handleRedeem = (reward: Reward) => {
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src={owlMascot} alt="StudyOwl" className="w-24 h-24 mx-auto animate-pulse" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleRedeemClick = (reward: Reward) => {
     if (userPoints >= reward.cost) {
-      setUserPoints(userPoints - reward.cost);
-      toast({
-        title: "Reward Redeemed! 🎉",
-        description: `You got ${reward.name}!`,
-        variant: "default",
-      });
+      setSelectedReward(reward);
+      setShowFingerprintModal(true);
     } else {
       toast({
         title: "Not enough points 😢",
         description: `You need ${reward.cost - userPoints} more points!`,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRedeemConfirm = () => {
+    if (selectedReward) {
+      setUserPoints(userPoints - selectedReward.cost);
+      toast({
+        title: "Reward Redeemed! 🎉",
+        description: `You got ${selectedReward.name}!`,
+        variant: "default",
+      });
+      setSelectedReward(null);
     }
   };
 
@@ -59,7 +89,19 @@ const Rewards = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <img src={owlMascot} alt="StudyOwl" className="w-12 h-12" />
+            <div>
+              <p className="text-sm text-muted-foreground">Welcome,</p>
+              <p className="text-lg font-bold text-accent">{profile?.name || 'Student'}</p>
+            </div>
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={signOut}
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
 
         <div className="text-center mb-12">
@@ -92,7 +134,7 @@ const Rewards = () => {
                   <span className="font-bold text-lg text-accent">{reward.cost} points</span>
                 </div>
                 <Button
-                  onClick={() => handleRedeem(reward)}
+                  onClick={() => handleRedeemClick(reward)}
                   disabled={!canAfford}
                   variant={canAfford ? "default" : "outline"}
                   className="w-full"
@@ -116,6 +158,17 @@ const Rewards = () => {
             Play Now
           </Button>
         </GameCard>
+
+        {/* Fingerprint Modal */}
+        <FingerprintModal
+          isOpen={showFingerprintModal}
+          onClose={() => {
+            setShowFingerprintModal(false);
+            setSelectedReward(null);
+          }}
+          onConfirm={handleRedeemConfirm}
+          rewardName={selectedReward?.name || ""}
+        />
       </div>
 
       {/* Bottom Navigation */}
