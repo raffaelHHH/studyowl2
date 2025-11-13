@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import {
 import GameCard from "@/components/GameCard";
 import LetterCollector from "@/components/LetterCollector";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { QRScanner } from "@/components/QRScanner";
+import { ProgressTracker } from "@/components/ProgressTracker";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Trophy, Star, Home, Info } from "lucide-react";
 import owlMascot from "@/assets/owl-mascot.png";
@@ -47,6 +49,9 @@ const Game = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [earnedLetter, setEarnedLetter] = useState("");
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(true); // Start with QR scanner
+  const [waitingForQR, setWaitingForQR] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false); // Track if game has started
   const targetWord = "LENGTH";
 
   const question = mathQuestions[currentQuestion];
@@ -79,14 +84,29 @@ const Game = () => {
     }
   };
 
+  const handleQRScan = (result: string) => {
+    setShowQRScanner(false);
+    setWaitingForQR(false);
+    
+    if (!gameStarted) {
+      setGameStarted(true);
+    }
+    
+    toast({
+      title: "QR Code Scanned!",
+      description: "Proceeding to next checkpoint...",
+    });
+  };
+
   const handleFeedbackContinue = () => {
     setShowFeedback(false);
     
     if (isCorrect) {
       // Move to next question or complete game
       if (currentQuestion < mathQuestions.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-        setUserAnswer("");
+        // Show QR scanner before next question
+        setShowQRScanner(true);
+        setWaitingForQR(true);
       } else {
         // Game completed - save score and navigate
         const existingScores = JSON.parse(localStorage.getItem('mathGameScores') || '[]');
@@ -109,11 +129,40 @@ const Game = () => {
     }
   };
 
+  // Effect to move to next question after QR scan
+  useEffect(() => {
+    if (!waitingForQR && showQRScanner === false && isCorrect && currentQuestion < mathQuestions.length - 1 && gameStarted) {
+      const timer = setTimeout(() => {
+        setCurrentQuestion(currentQuestion + 1);
+        setUserAnswer("");
+        setWaitingForQR(true); // Reset for next QR scan
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [waitingForQR, showQRScanner, isCorrect, currentQuestion, gameStarted]);
+
   const isGameComplete = collectedLetters.length === targetWord.length;
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="container mx-auto max-w-4xl py-8 px-4">
+      {/* Show QR Scanner at start or between questions */}
+      {showQRScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => {
+            if (!gameStarted) {
+              navigate('/');
+            } else {
+              setShowQRScanner(false);
+            }
+          }}
+          questionNumber={gameStarted ? currentQuestion + 2 : 1}
+        />
+      )}
+
+      {/* Only show game content after initial QR scan */}
+      {gameStarted && (
+        <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -145,6 +194,16 @@ const Game = () => {
             targetWord={targetWord}
             className="mb-6" 
           />
+          
+          {/* Visual Progress Tracker */}
+          <div className="mb-6 p-4 bg-card/50 rounded-2xl border border-accent/20">
+            <p className="text-center text-sm text-muted-foreground mb-3">Journey Progress</p>
+            <ProgressTracker 
+              totalSteps={mathQuestions.length}
+              currentStep={currentQuestion + 1}
+            />
+          </div>
+
           <div className="w-full bg-muted rounded-full h-3 mb-2">
             <div 
               className="bg-gradient-to-r from-accent via-accent to-primary h-3 rounded-full transition-all duration-500"
@@ -214,6 +273,15 @@ const Game = () => {
           </GameCard>
         )}
 
+        {/* QR Scanner between questions */}
+        {showQRScanner && gameStarted && (
+          <QRScanner
+            onScan={handleQRScan}
+            onClose={() => setShowQRScanner(false)}
+            questionNumber={currentQuestion + 2}
+          />
+        )}
+
         {/* Feedback Modal */}
         <FeedbackModal 
           isOpen={showFeedback}
@@ -237,9 +305,10 @@ const Game = () => {
                 Exit
               </AlertDialogAction>
             </AlertDialogFooter>
-          </AlertDialogContent>
+        </AlertDialogContent>
         </AlertDialog>
       </div>
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
