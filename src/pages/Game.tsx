@@ -52,6 +52,7 @@ const Game = () => {
   const [showQRScanner, setShowQRScanner] = useState(true); // Start with QR scanner
   const [waitingForQR, setWaitingForQR] = useState(true);
   const [gameStarted, setGameStarted] = useState(false); // Track if game has started
+  const [isProcessingScan, setIsProcessingScan] = useState(false); // Prevent multiple scans
   const targetWord = "LENGTH";
 
   const question = mathQuestions[currentQuestion];
@@ -85,6 +86,9 @@ const Game = () => {
   };
 
   const handleQRScan = (result: string) => {
+    if (isProcessingScan) return; // Prevent multiple scans
+    
+    setIsProcessingScan(true);
     setShowQRScanner(false);
     setWaitingForQR(false);
     
@@ -95,7 +99,11 @@ const Game = () => {
     toast({
       title: "QR Code Scanned!",
       description: "Proceeding to next checkpoint...",
+      duration: 2000,
     });
+    
+    // Reset processing flag after a short delay
+    setTimeout(() => setIsProcessingScan(false), 1000);
   };
 
   const handleFeedbackContinue = () => {
@@ -131,15 +139,15 @@ const Game = () => {
 
   // Effect to move to next question after QR scan
   useEffect(() => {
-    if (!waitingForQR && showQRScanner === false && isCorrect && currentQuestion < mathQuestions.length - 1 && gameStarted) {
+    if (!waitingForQR && showQRScanner === false && isCorrect && currentQuestion < mathQuestions.length - 1 && gameStarted && !isProcessingScan) {
       const timer = setTimeout(() => {
         setCurrentQuestion(currentQuestion + 1);
         setUserAnswer("");
-        setWaitingForQR(true); // Reset for next QR scan
-      }, 300);
+        setIsCorrect(false); // Reset correct state
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [waitingForQR, showQRScanner, isCorrect, currentQuestion, gameStarted]);
+  }, [waitingForQR, showQRScanner, isCorrect, currentQuestion, gameStarted, isProcessingScan]);
 
   const isGameComplete = collectedLetters.length === targetWord.length;
 
@@ -271,15 +279,6 @@ const Game = () => {
               </Button>
             </div>
           </GameCard>
-        )}
-
-        {/* QR Scanner between questions */}
-        {showQRScanner && gameStarted && (
-          <QRScanner
-            onScan={handleQRScan}
-            onClose={() => setShowQRScanner(false)}
-            questionNumber={currentQuestion + 2}
-          />
         )}
 
         {/* Feedback Modal */}
