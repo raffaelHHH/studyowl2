@@ -112,7 +112,8 @@ const Game = () => {
     if (isCorrect) {
       // Move to next question or complete game
       if (currentQuestion < mathQuestions.length - 1) {
-        // Show QR scanner before next question
+        // Show QR scanner before next question and reset correct state
+        setIsCorrect(false);
         setShowQRScanner(true);
         setWaitingForQR(true);
       } else {
@@ -139,15 +140,14 @@ const Game = () => {
 
   // Effect to move to next question after QR scan
   useEffect(() => {
-    if (!waitingForQR && showQRScanner === false && isCorrect && currentQuestion < mathQuestions.length - 1 && gameStarted && !isProcessingScan) {
+    if (!waitingForQR && showQRScanner === false && gameStarted && !isProcessingScan) {
       const timer = setTimeout(() => {
         setCurrentQuestion(currentQuestion + 1);
         setUserAnswer("");
-        setIsCorrect(false); // Reset correct state
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [waitingForQR, showQRScanner, isCorrect, currentQuestion, gameStarted, isProcessingScan]);
+  }, [waitingForQR, showQRScanner, currentQuestion, gameStarted, isProcessingScan]);
 
   const isGameComplete = collectedLetters.length === targetWord.length;
 
