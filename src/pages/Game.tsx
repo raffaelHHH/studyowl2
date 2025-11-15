@@ -86,15 +86,11 @@ const Game = () => {
   };
 
   const handleQRScan = (result: string) => {
-    if (isProcessingScan) return; // Prevent multiple scans
+    if (isProcessingScan) return;
     
     setIsProcessingScan(true);
     setShowQRScanner(false);
     setWaitingForQR(false);
-    
-    if (!gameStarted) {
-      setGameStarted(true);
-    }
     
     toast({
       title: "QR Code Scanned!",
@@ -102,7 +98,14 @@ const Game = () => {
       duration: 2000,
     });
     
-    // Reset processing flag after a short delay
+    // If game not started, just start it. Otherwise advance to next question.
+    if (!gameStarted) {
+      setGameStarted(true);
+    } else {
+      setCurrentQuestion(prev => prev + 1);
+      setUserAnswer("");
+    }
+    
     setTimeout(() => setIsProcessingScan(false), 1000);
   };
 
@@ -110,14 +113,12 @@ const Game = () => {
     setShowFeedback(false);
     
     if (isCorrect) {
-      // Move to next question or complete game
       if (currentQuestion < mathQuestions.length - 1) {
-        // Show QR scanner before next question and reset correct state
-        setIsCorrect(false);
+        // Show QR scanner for next checkpoint
         setShowQRScanner(true);
         setWaitingForQR(true);
       } else {
-        // Game completed - save score and navigate
+        // Game completed
         const existingScores = JSON.parse(localStorage.getItem('mathGameScores') || '[]');
         const newScore = {
           score: score,
@@ -133,21 +134,10 @@ const Game = () => {
         }, 500);
       }
     } else {
-      // Reset answer field for retry
       setUserAnswer("");
     }
   };
 
-  // Effect to move to next question after QR scan
-  useEffect(() => {
-    if (!waitingForQR && showQRScanner === false && gameStarted && !isProcessingScan) {
-      const timer = setTimeout(() => {
-        setCurrentQuestion(currentQuestion + 1);
-        setUserAnswer("");
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [waitingForQR, showQRScanner, currentQuestion, gameStarted, isProcessingScan]);
 
   const isGameComplete = collectedLetters.length === targetWord.length;
 
