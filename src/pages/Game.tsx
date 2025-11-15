@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,10 +49,11 @@ const Game = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [earnedLetter, setEarnedLetter] = useState("");
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showQRScanner, setShowQRScanner] = useState(true); // Start with QR scanner
+  const [showQRScanner, setShowQRScanner] = useState(true);
   const [waitingForQR, setWaitingForQR] = useState(true);
-  const [gameStarted, setGameStarted] = useState(false); // Track if game has started
-  const [isProcessingScan, setIsProcessingScan] = useState(false); // Prevent multiple scans
+  const [gameStarted, setGameStarted] = useState(false);
+  const [isProcessingScan, setIsProcessingScan] = useState(false);
+  const processingRef = useRef(false);
   const targetWord = "LENGTH";
 
   const question = mathQuestions[currentQuestion];
@@ -86,27 +87,35 @@ const Game = () => {
   };
 
   const handleQRScan = (result: string) => {
-    if (isProcessingScan) return;
+    if (processingRef.current) return;
     
+    processingRef.current = true;
     setIsProcessingScan(true);
+    
+    // Close scanner immediately
     setShowQRScanner(false);
     setWaitingForQR(false);
     
     toast({
       title: "QR Code Scanned!",
-      description: "Proceeding to next checkpoint...",
+      description: gameStarted ? "Moving to next question..." : "Starting game...",
       duration: 2000,
     });
     
-    // If game not started, just start it. Otherwise advance to next question.
-    if (!gameStarted) {
-      setGameStarted(true);
-    } else {
-      setCurrentQuestion(prev => prev + 1);
-      setUserAnswer("");
-    }
-    
-    setTimeout(() => setIsProcessingScan(false), 1000);
+    // Delay state updates to ensure scanner closes
+    setTimeout(() => {
+      if (!gameStarted) {
+        setGameStarted(true);
+      } else {
+        setCurrentQuestion(prev => prev + 1);
+        setUserAnswer("");
+      }
+      
+      setTimeout(() => {
+        setIsProcessingScan(false);
+        processingRef.current = false;
+      }, 500);
+    }, 500);
   };
 
   const handleFeedbackContinue = () => {
