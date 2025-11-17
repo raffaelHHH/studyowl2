@@ -10,6 +10,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Rules from "./pages/Rules";
 import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
+import MapPage from "./pages/MapPage";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/map" element={<MapPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
