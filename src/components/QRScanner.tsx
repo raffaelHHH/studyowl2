@@ -12,114 +12,92 @@ interface QRScannerProps {
 
 export const QRScanner = ({ onScan, onClose, questionNumber }: QRScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [error, setError] = useState<string>("");
-  const [isScanning, setIsScanning] = useState(false);
+  const controlsRef = useRef<any>(null);     // <— The FIX
   const streamRef = useRef<MediaStream | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const reader = new BrowserMultiFormatReader();
 
-    const startScanning = async () => {
+    const start = async () => {
       try {
-        setIsScanning(true);
-        
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        
-        // Try to find back camera
-        const backCamera = videoDevices.find(device => 
-          device.label.toLowerCase().includes('back') || 
-          device.label.toLowerCase().includes('rear')
+        const cams = devices.filter((d) => d.kind === "videoinput");
+
+        const back = cams.find((d) =>
+          d.label.toLowerCase().includes("back")
         );
-        
-        const deviceId = backCamera ? backCamera.deviceId : videoDevices[videoDevices.length - 1]?.deviceId;
 
-        if (videoRef.current) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: deviceId ? { exact: deviceId } : undefined }
-          });
-          streamRef.current = stream;
-          videoRef.current.srcObject = stream;
+        const deviceId = back?.deviceId ?? cams[cams.length - 1]?.deviceId;
 
-          await reader.decodeFromVideoDevice(
-            deviceId,
-            videoRef.current,
-            (result, error) => {
-              if (result) {
-                const text = result.getText();
-                onScan(text);
-              }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: deviceId ? { deviceId: { exact: deviceId } } : true,
+        });
+        streamRef.current = stream;
+
+        if (videoRef.current) videoRef.current.srcObject = stream;
+
+        // IMPORTANT: Save returned controls for stopping later
+        controlsRef.current = await reader.decodeFromVideoDevice(
+          deviceId,
+          videoRef.current!,
+          (result) => {
+            if (result) {
+              stopScanner();
+              onScan(result.getText());
             }
-          );
-        }
+          }
+        );
       } catch (err) {
-        setError("Failed to access camera. Please allow camera permissions.");
         console.error(err);
+        setError("Camera unavailable. Please allow access.");
       }
     };
 
-    startScanning();
+    start();
 
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [onScan]);
+    return () => stopScanner();
+  }, []);
+
+  const stopScanner = () => {
+    try {
+      // Stop ZXing continuous scanning
+      controlsRef.current?.stop();
+    } catch (e) {
+      console.warn("ZXing stop() failed", e);
+    }
+
+    // Stop camera stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
-      <Card className="relative w-full max-w-md mx-4 p-6 bg-card border-2 border-accent/30">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 text-foreground hover:text-accent"
-          onClick={onClose}
-        >
+    <Card className="relative w-full max-w-md mx-auto p-6 bg-card border-2 border-accent/30 rounded-xl">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <Camera className="w-7 h-7 text-accent" />
+          <div>
+            <h2 className="text-lg font-bold text-accent">
+              {questionNumber ? `Checkpoint ${questionNumber}` : "Scan QR Code"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Position the QR code within the frame
+            </p>
+          </div>
+        </div>
+
+        <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="w-5 h-5" />
         </Button>
+      </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Camera className="w-8 h-8 text-accent" />
-            <div>
-              <h2 className="text-xl font-bold text-accent">
-                {questionNumber ? `Checkpoint ${questionNumber}` : "Scan QR Code"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Position the QR code within the frame
-              </p>
-            </div>
-          </div>
+      <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+      </div>
 
-          <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              autoPlay
-              playsInline
-            />
-            
-            {/* Scanning frame overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-64 h-64 border-4 border-accent rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-accent rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-accent rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-accent rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-accent rounded-br-lg" />
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
-
-          <p className="text-xs text-center text-muted-foreground">
-            Scan the QR code to {questionNumber ? "proceed to the next question" : "start the game"}
-          </p>
-        </div>
-      </Card>
-    </div>
+      {error && <p className="text-center text-destructive mt-3">{error}</p>}
+    </Card>
   );
 };
