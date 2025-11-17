@@ -8,30 +8,30 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Purple and yellow theme */
-    --background: 255 49% 43%;
+    /* Navy blue and yellow theme */
+    --background: 220 60% 22%;
     --foreground: 50 88% 67%;
 
-    --card: 255 49% 38%;
+    --card: 220 60% 18%;
     --card-foreground: 50 88% 67%;
 
-    --popover: 255 49% 38%;
+    --popover: 220 60% 18%;
     --popover-foreground: 50 88% 67%;
 
     /* Yellow primary color */
     --primary: 50 88% 67%;
-    --primary-foreground: 255 49% 43%;
+    --primary-foreground: 220 60% 22%;
 
-    /* Darker purple secondary */
-    --secondary: 255 49% 33%;
+    /* Darker navy secondary */
+    --secondary: 220 60% 15%;
     --secondary-foreground: 50 88% 67%;
 
-    --muted: 255 49% 33%;
+    --muted: 220 60% 15%;
     --muted-foreground: 50 40% 60%;
 
     /* Yellow accent */
     --accent: 50 88% 67%;
-    --accent-foreground: 255 49% 43%;
+    --accent-foreground: 220 60% 22%;
 
     /* Success green */
     --success: 140 60% 55%;
@@ -45,16 +45,16 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
 
     --border: 50 40% 50%;
-    --input: 255 49% 38%;
+    --input: 220 60% 18%;
     --ring: 50 88% 67%;
 
     --radius: 1rem;
 
-    --sidebar-background: 255 49% 43%;
+    --sidebar-background: 220 60% 22%;
     --sidebar-foreground: 50 88% 67%;
     --sidebar-primary: 50 88% 67%;
-    --sidebar-primary-foreground: 255 49% 43%;
-    --sidebar-accent: 255 49% 33%;
+    --sidebar-primary-foreground: 220 60% 22%;
+    --sidebar-accent: 220 60% 15%;
     --sidebar-accent-foreground: 50 88% 67%;
     --sidebar-border: 50 40% 50%;
     --sidebar-ring: 50 88% 67%;
